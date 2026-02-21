@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>המירוץ למיליון - תחנה סופית</title>
+    
+    <!-- חיבור לעיצוב (Tailwind CSS) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- חיבור לאייקונים (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Assistant', sans-serif;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(120vh) rotate(720deg); }
+        }
+        
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-bounce-in {
+            animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-yellow-400 text-slate-900 py-6 px-4 shadow-md border-b-4 border-yellow-500 relative">
+        <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center gap-3 mb-4 md:mb-0">
+                
+                <!-- לוגו -->
+                <img id="main-logo" src="המירוץ_למיליון.png" alt="לוגו המירוץ למיליון" class="h-16 md:h-20 object-contain drop-shadow-md rounded-lg" onerror="handleImageError()">
+                
+                <!-- גיבוי למקרה שהתמונה לא נמצאת -->
+                <div id="fallback-logo" class="bg-white p-2 rounded-full shadow-sm hidden">
+                    <i data-lucide="globe" class="text-blue-600 w-8 h-8"></i>
+                </div>
+
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black tracking-tight">המירוץ למיליון</h1>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-1">
+                        <i data-lucide="map-pin" class="w-4 h-4"></i> תחנה סופית: ישראל
+                    </h2>
+                </div>
+            </div>
+            <button onclick="openDictionary()" class="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full font-bold hover:bg-slate-800 transition shadow-sm active:scale-95">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                עזרי פיצוח (מילון)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto p-4 py-8 relative">
+        
+        <!-- קונפטי קונטיינר -->
+        <div id="confetti-container" class="fixed inset-0 pointer-events-none z-50 overflow-hidden hidden"></div>
+
+        <!-- Instructions -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8 text-center md:text-right">
+            <h3 class="text-xl font-bold text-slate-800 mb-2">ברוכים השבים הביתה, אלופים! ✈️</h3>
+            <p class="text-slate-600 leading-relaxed mb-4 text-lg">
+                טיילתם ברחבי העולם והגעתם לתחנה האחרונה בהחלט. כדי לחצות את קו הסיום, עליכם לפצח את צופן השפות.<br />
+                מצאו את <span class="font-bold text-blue-600">המיקום המספרי</span> של כל אות זרה בתוך האלפבית שלה, והזינו אותו בתיבה.
+                <br />
+                המספר שתקבלו שווה לאותיות השפה העברית (1=א', 2=ב' וכו' - עד ל-27 כולל אותיות סופיות).
+            </p>
+            <div class="inline-block bg-blue-50 text-blue-800 px-4 py-2 rounded-lg font-medium text-sm border border-blue-100">
+                💡 טיפ: היעזרו בכפתור <strong>"עזרי פיצוח"</strong> למעלה כדי לראות את האלפבית של כל שפה!
+            </div>
+        </div>
+
+        <!-- Puzzle Board -->
+        <div class="bg-white rounded-xl shadow-md border-2 border-slate-200 p-6 md:p-10 mb-8 relative">
+            <div id="puzzle-board" class="flex flex-wrap gap-x-12 gap-y-10 justify-center">
+                <!-- הקוביות ייווצרו כאן דינמית על ידי Javascript -->
+            </div>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen" class="bg-green-100 border-2 border-green-500 rounded-xl p-8 text-center transform transition-all mt-8 hidden">
+            <i data-lucide="trophy" class="w-16 h-16 text-green-600 mx-auto mb-4"></i>
+            <h2 class="text-3xl font-black text-green-800 mb-2">כל הכבוד, אלופים!</h2>
+            <p class="text-xl text-green-700 font-medium">סיימתם את המירוץ בהצלחה!</p>
+        </div>
+
+    </main>
+
+    <!-- Dictionary Modal -->
+    <div id="dictionary-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm hidden">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-6 h-6 text-yellow-400"></i>
+                    מילון שפות עולמי
+                </h2>
+                <button onclick="closeDictionary()" class="text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 p-2 rounded-full transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex border-b overflow-x-auto bg-slate-50 hide-scrollbar" dir="rtl" id="dict-tabs">
+                <!-- הטאבים ייווצרו כאן -->
+            </div>
+
+            <div class="p-6 overflow-y-auto bg-white flex-1">
+                <p class="text-center text-slate-600 mb-6 text-lg">
+                    חפשו את האות בטבלה כדי לגלות את המיקום המספרי שלה.
+                </p>
+                
+                <div id="dict-content" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    <!-- תוכן המילון ייווצר כאן -->
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border-t text-center">
+                <button onclick="closeDictionary()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-sm hover:bg-blue-700 transition w-full md:w-auto">
+                    חזרה לחידה
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // --- נתונים ומילוני שפות ---
+        const ALPHABETS = {
+            he: [
+                { char: 'א', num: 1 }, { char: 'ב', num: 2 }, { char: 'ג', num: 3 }, { char: 'ד', num: 4 },
+                { char: 'ה', num: 5 }, { char: 'ו', num: 6 }, { char: 'ז', num: 7 }, { char: 'ח', num: 8 },
+                { char: 'ט', num: 9 }, { char: 'י', num: 10 }, { char: 'כ', num: 11 }, { char: 'ך', num: 12 },
+                { char: 'ל', num: 13 }, { char: 'מ', num: 14 }, { char: 'ם', num: 15 }, { char: 'נ', num: 16 },
+                { char: 'ן', num: 17 }, { char: 'ס', num: 18 }, { char: 'ע', num: 19 }, { char: 'פ', num: 20 },
+                { char: 'ף', num: 21 }, { char: 'צ', num: 22 }, { char: 'ץ', num: 23 }, { char: 'ק', num: 24 },
+                { char: 'ר', num: 25 }, { char: 'ש', num: 26 }, { char: 'ת', num: 27 }
+            ],
+            en: [
+                { char: 'A', num: 1 }, { char: 'B', num: 2 }, { char: 'C', num: 3 }, { char: 'D', num: 4 },
+                { char: 'E', num: 5 }, { char: 'F', num: 6 }, { char: 'G', num: 7 }, { char: 'H', num: 8 },
+                { char: 'I', num: 9 }, { char: 'J', num: 10 }, { char: 'K', num: 11 }, { char: 'L', num: 12 },
+                { char: 'M', num: 13 }, { char: 'N', num: 14 }, { char: 'O', num: 15 }, { char: 'P', num: 16 },
+                { char: 'Q', num: 17 }, { char: 'R', num: 18 }, { char: 'S', num: 19 }, { char: 'T', num: 20 },
+                { char: 'U', num: 21 }, { char: 'V', num: 22 }, { char: 'W', num: 23 }, { char: 'X', num: 24 },
+                { char: 'Y', num: 25 }, { char: 'Z', num: 26 }
+            ],
+            hi: [
+                { char: 'क', num: 1 }, { char: 'ख', num: 2 }, { char: 'ग', num: 3 }, { char: 'घ', num: 4 },
+                { char: 'च', num: 5 }, { char: 'छ', num: 6 }, { char: 'ज', num: 7 }, { char: 'झ', num: 8 },
+                { char: 'ट', num: 9 }, { char: 'ठ', num: 10 }, { char: 'ड', num: 11 }, { char: 'ढ', num: 12 },
+                { char: 'ण', num: 13 }, { char: 'त', num: 14 }, { char: 'थ', num: 15 }, { char: 'द', num: 16 },
+                { char: 'ध', num: 17 }, { char: 'न', num: 18 }, { char: 'प', num: 19 }, { char: 'फ', num: 20 },
+                { char: 'ब', num: 21 }, { char: 'भ', num: 22 }, { char: 'म', num: 23 }, { char: 'य', num: 24 },
+                { char: 'र', num: 25 }, { char: 'ल', num: 26 }, { char: 'व', num: 27 }
+            ],
+            jp: [
+                { char: 'あ', num: 1 }, { char: 'い', num: 2 }, { char: 'う', num: 3 }, { char: 'え', num: 4 },
+                { char: 'お', num: 5 }, { char: 'か', num: 6 }, { char: 'き', num: 7 }, { char: 'く', num: 8 },
+                { char: 'け', num: 9 }, { char: 'こ', num: 10 }, { char: 'さ', num: 11 }, { char: 'し', num: 12 },
+                { char: 'す', num: 13 }, { char: 'せ', num: 14 }, { char: 'そ', num: 15 }, { char: 'た', num: 16 },
+                { char: 'ち', num: 17 }, { char: 'つ', num: 18 }, { char: 'て', num: 19 }, { char: 'と', num: 20 },
+                { char: 'な', num: 21 }, { char: 'に', num: 22 }, { char: 'ぬ', num: 23 }, { char: 'ね', num: 24 },
+                { char: 'の', num: 25 }, { char: 'は', num: 26 }, { char: 'ひ', num: 27 }
+            ],
+            ru: [
+                { char: 'А', num: 1 }, { char: 'Б', num: 2 }, { char: 'В', num: 3 }, { char: 'Г', num: 4 },
+                { char: 'Д', num: 5 }, { char: 'Е', num: 6 }, { char: 'Ё', num: 7 }, { char: 'Ж', num: 8 },
+                { char: 'З', num: 9 }, { char: 'И', num: 10 }, { char: 'Й', num: 11 }, { char: 'К', num: 12 },
+                { char: 'Л', num: 13 }, { char: 'М', num: 14 }, { char: 'Н', num: 15 }, { char: 'О', num: 16 },
+                { char: 'П', num: 17 }, { char: 'Р', num: 18 }, { char: 'С', num: 19 }, { char: 'Т', num: 20 },
+                { char: 'У', num: 21 }, { char: 'Ф', num: 22 }, { char: 'Х', num: 23 }, { char: 'Ц', num: 24 },
+                { char: 'Ч', num: 25 }, { char: 'Ш', num: 26 }, { char: 'Щ', num: 27 }
+            ],
+            ar: [
+                { char: 'ا', num: 1 }, { char: 'ب', num: 2 }, { char: 'ت', num: 3 }, { char: 'ث', num: 4 },
+                { char: 'ج', num: 5 }, { char: 'ح', num: 6 }, { char: 'خ', num: 7 }, { char: 'د', num: 8 },
+                { char: 'ذ', num: 9 }, { char: 'ر', num: 10 }, { char: 'ز', num: 11 }, { char: 'س', num: 12 },
+                { char: 'ش', num: 13 }, { char: 'ص', num: 14 }, { char: 'ض', num: 15 }, { char: 'ط', num: 16 },
+                { char: 'ظ', num: 17 }, { char: 'ع', num: 18 }, { char: 'غ', num: 19 }, { char: 'ف', num: 20 },
+                { char: 'ق', num: 21 }, { char: 'ك', num: 22 }, { char: 'ل', num: 23 }, { char: 'م', num: 24 },
+                { char: 'ن', num: 25 }, { char: 'ه', num: 26 }, { char: 'و', num: 27 }, { char: 'ي', num: 28 }
+            ]
+        };
+
+        const PUZZLE_WORDS = [
+            [ // כל
+                { char: 'さ', lang: 'יפנית', langKey: 'jp', num: 11, heb: 'כ' },
+                { char: 'ण', lang: 'הינדי', langKey: 'hi', num: 13, heb: 'ל' }
+            ],
+            [ // הכבוד
+                { char: 'Д', lang: 'רוסית', langKey: 'ru', num: 5, heb: 'ה' },
+                { char: 'ز', lang: 'ערבית', langKey: 'ar', num: 11, heb: 'כ' },
+                { char: 'B', lang: 'אנגלית', langKey: 'en', num: 2, heb: 'ב' },
+                { char: 'か', lang: 'יפנית', langKey: 'jp', num: 6, heb: 'ו' },
+                { char: 'घ', lang: 'הינדי', langKey: 'hi', num: 4, heb: 'ד' }
+            ],
+            [ // סיימתם
+                { char: 'R', lang: 'אנגלית', langKey: 'en', num: 18, heb: 'ס' },
+                { char: 'И', lang: 'רוסית', langKey: 'ru', num: 10, heb: 'י' },
+                { char: 'ر', lang: 'ערבית', langKey: 'ar', num: 10, heb: 'י' },
+                { char: 'せ', lang: 'יפנית', langKey: 'jp', num: 14, heb: 'מ' },
+                { char: 'व', lang: 'הינדי', langKey: 'hi', num: 27, heb: 'ת' },
+                { char: 'O', lang: 'אנגלית', langKey: 'en', num: 15, heb: 'ם' }
+            ],
+            [ // את
+                { char: 'あ', lang: 'יפנית', langKey: 'jp', num: 1, heb: 'א' },
+                { char: 'و', lang: 'ערבית', langKey: 'ar', num: 27, heb: 'ת' }
+            ],
+            [ // המירוץ
+                { char: 'E', lang: 'אנגלית', langKey: 'en', num: 5, heb: 'ה' },
+                { char: 'М', lang: 'רוסית', langKey: 'ru', num: 14, heb: 'מ' },
+                { char: 'こ', lang: 'יפנית', langKey: 'jp', num: 10, heb: 'י' },
+                { char: 'र', lang: 'הינדי', langKey: 'hi', num: 25, heb: 'ר' },
+                { char: 'ح', lang: 'ערבית', langKey: 'ar', num: 6, heb: 'ו' },
+                { char: 'Х', lang: 'רוסית', langKey: 'ru', num: 23, heb: 'ץ' }
+            ],
+            [ // בהצלחה
+                { char: 'い', lang: 'יפנית', langKey: 'jp', num: 2, heb: 'ב' },
+                { char: 'ج', lang: 'ערבית', langKey: 'ar', num: 5, heb: 'ה' },
+                { char: 'V', lang: 'אנגלית', langKey: 'en', num: 22, heb: 'צ' },
+                { char: 'Л', lang: 'רוסית', langKey: 'ru', num: 13, heb: 'ל' },
+                { char: 'झ', lang: 'הינדי', langKey: 'hi', num: 8, heb: 'ח' },
+                { char: 'E', lang: 'אנגלית', langKey: 'en', num: 5, heb: 'ה' }
+            ]
+        ];
+
+        let totalLetters = 0;
+        let correctAnswers = 0;
+        let currentTab = 'he';
+
+        // טיפול בתמונה חסרה
+        function handleImageError() {
+            document.getElementById('main-logo').classList.add('hidden');
+            document.getElementById('fallback-logo').classList.remove('hidden');
+        }
+
+        // אתחול האפליקציה
+        function init() {
+            renderPuzzle();
+            renderDictTabs();
+            renderDictContent();
+            lucide.createIcons(); // הפעלת האייקונים
+        }
+
+        // רינדור לוח החידה
+        function renderPuzzle() {
+            const board = document.getElementById('puzzle-board');
+            let html = '';
+
+            PUZZLE_WORDS.forEach((word, wIdx) => {
+                totalLetters += word.length;
+                html += `<div class="flex gap-2 md:gap-3 flex-row-reverse" dir="ltr">`;
+                
+                word.forEach((letter, lIdx) => {
+                    const id = `${wIdx}-${lIdx}`;
+                    html += `
+                        <div id="box-${id}" class="flex flex-col items-center w-[4.5rem] md:w-20 bg-white border-2 rounded-xl p-2 transition-all duration-300 border-slate-300 shadow-sm">
+                            <span class="text-[10px] md:text-xs text-slate-500 font-bold mb-1 tracking-wide">${letter.lang}</span>
+                            <span id="char-${id}" class="text-2xl md:text-3xl font-black mb-2 text-slate-800">${letter.char}</span>
+                            
+                            <input type="text" maxlength="2" inputmode="numeric" 
+                                data-w="${wIdx}" data-l="${lIdx}" data-num="${letter.num}"
+                                oninput="handleInput(this)"
+                                class="w-12 h-10 md:w-14 md:h-12 text-center text-xl font-bold rounded-lg border outline-none transition-colors bg-slate-50 border-slate-300 focus:border-blue-500 focus:bg-white" />
+                            
+                            <div class="mt-3 h-8 flex items-center justify-center">
+                                <span id="heb-${id}" class="text-2xl md:text-3xl font-black text-green-600 hidden">${letter.heb}</span>
+                                <span id="qm-${id}" class="text-xl text-slate-300">?</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            });
+
+            board.innerHTML = html;
+        }
+
+        // טיפול בהזנת טקסט
+        function handleInput(inputElem) {
+            // ניקוי תוויות לא מספריות
+            inputElem.value = inputElem.value.replace(/\D/g, '');
+            
+            const wIdx = inputElem.getAttribute('data-w');
+            const lIdx = inputElem.getAttribute('data-l');
+            const targetNum = inputElem.getAttribute('data-num');
+            const id = `${wIdx}-${lIdx}`;
+
+            if (inputElem.value === targetNum) {
+                // תשובה נכונה!
+                inputElem.disabled = true;
+                
+                // עיצוב התיבה
+                inputElem.classList.remove('bg-slate-50', 'border-slate-300', 'focus:border-blue-500', 'focus:bg-white');
+                inputElem.classList.add('bg-green-100', 'border-green-400', 'text-green-800', 'cursor-not-allowed');
+                
+                const box = document.getElementById(`box-${id}`);
+                box.classList.remove('border-slate-300', 'bg-white');
+                box.classList.add('border-green-500', 'bg-green-50', 'shadow-md', 'scale-105');
+
+                const char = document.getElementById(`char-${id}`);
+                char.classList.remove('text-slate-800');
+                char.classList.add('text-green-700');
+
+                // הצגת האות העברית עם אנימציה
+                document.getElementById(`qm-${id}`).classList.add('hidden');
+                const hebLetter = document.getElementById(`heb-${id}`);
+                hebLetter.classList.remove('hidden');
+                hebLetter.classList.add('animate-bounce-in'); // אנימציה פשוטה ונחמדה
+
+                correctAnswers++;
+                checkWin();
+            }
+        }
+
+        // בדיקת ניצחון
+        function checkWin() {
+            if (correctAnswers === totalLetters) {
+                document.getElementById('win-screen').classList.remove('hidden');
+                document.getElementById('win-screen').classList.add('animate-bounce-in');
+                fireConfetti();
+            }
+        }
+
+        // מילון
+        const tabsInfo = [
+            { id: 'he', label: 'מפתח עברית' },
+            { id: 'en', label: 'אנגלית (A-Z)' },
+            { id: 'ru', label: 'רוסית (А-Я)' },
+            { id: 'ar', label: 'ערבית (ا-ي)' },
+            { id: 'hi', label: 'הינדי (क-व)' },
+            { id: 'jp', label: 'יפנית (あ-ひ)' }
+        ];
+
+        function renderDictTabs() {
+            const container = document.getElementById('dict-tabs');
+            let html = '';
+            tabsInfo.forEach(tab => {
+                const isActive = tab.id === currentTab;
+                const activeClass = isActive ? 'border-yellow-500 text-slate-900 bg-white' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100';
+                html += `
+                    <button onclick="changeTab('${tab.id}')" class="px-6 py-4 font-bold text-sm whitespace-nowrap transition-colors border-b-4 ${activeClass}">
+                        ${tab.label}
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function changeTab(tabId) {
+            currentTab = tabId;
+            renderDictTabs();
+            renderDictContent();
+        }
+
+        function renderDictContent() {
+            const container = document.getElementById('dict-content');
+            const data = ALPHABETS[currentTab];
+            
+            // הגדרת כיוון (Ltr לאנגלית, יפנית, הינדי)
+            if (['en', 'jp', 'hi'].includes(currentTab)) {
+                container.dir = 'ltr';
+            } else {
+                container.dir = 'rtl';
+            }
+
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <div class="flex flex-col items-center justify-center p-3 border rounded-lg bg-slate-50 hover:bg-yellow-50 hover:border-yellow-300 transition-colors">
+                        <span class="text-3xl font-black text-slate-800 mb-1">${item.char}</span>
+                        <span class="text-sm font-bold text-white bg-blue-600 px-3 py-1 rounded-full">${item.num}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function openDictionary() {
+            document.getElementById('dictionary-modal').classList.remove('hidden');
+        }
+
+        function closeDictionary() {
+            document.getElementById('dictionary-modal').classList.add('hidden');
+        }
+
+        // קונפטי
+        function fireConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.classList.remove('hidden');
+            const colors = ['#facc15', '#ef4444', '#3b82f6', '#22c55e', '#a855f7'];
+            
+            let html = '';
+            for (let i = 0; i < 100; i++) {
+                const x = Math.random() * 100;
+                const y = Math.random() * -100;
+                const rotation = Math.random() * 360;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const delay = Math.random() * 2;
+                const duration = 2 + Math.random() * 3;
+
+                html += `<div class="absolute w-3 h-3 rounded-full opacity-80" 
+                              style="left: ${x}vw; top: ${y}vh; background-color: ${color}; 
+                                     transform: rotate(${rotation}deg); 
+                                     animation: fall ${duration}s linear ${delay}s forwards"></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // הפעלת הפונקציה הראשית בטעינת הדף
+        window.onload = init;
+    </script>
+</body>
+</html>
